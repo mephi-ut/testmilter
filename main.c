@@ -15,81 +15,141 @@
 
 // === Code ===
 
+// See: http://www.postfix.org/MILTER_README.html
+static const char *macros[] = {
+	"i",
+	"j",
+	"_",
+	"{auth_authen}",
+	"{auth_author}",
+	"{auth_type}",
+	"{client_addr}",
+	"{client_connections}",
+	"{client_name}",
+	"{client_port}",
+	"{client_ptr}",
+	"{cert_issuer}",
+	"{cert_subject}",
+	"{cipher_bits}",
+	"{cipher}",
+	"{daemon_name}",
+	"{mail_addr}",
+	"{mail_host}",
+	"{mail_mailer}",
+	"{rcpt_addr}",
+	"{rcpt_host}",
+	"{rcpt_mailer}",
+	"{tls_version}",
+	"v",
+	NULL
+};
+
+void check_macros(SMFICTX *ctx) {
+	int i;
+	char *symval;
+
+	i=0;
+	while(macros[i]) {
+		if((symval = smfi_getsymval(ctx, (char *)macros[i])) != 0)
+			syslog(LOG_NOTICE, "check_macros: \"%s\" == \"%s\".\n", macros[i], symval);
+		i++;
+	}
+
+	return;
+}
+
 extern sfsistat testmilter_cleanup(SMFICTX *, bool);
 
 sfsistat testmilter_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr) {
 	syslog(LOG_NOTICE, "testmilter_connect(ctx, \"%s\", hostaddr)\n", hostname);
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_helo(SMFICTX *ctx, char *helohost) {
 	syslog(LOG_NOTICE, "testmilter_helo(ctx, \"%s\", helo)\n", helohost);
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_envfrom(SMFICTX *ctx, char **argv) {
 	syslog(LOG_NOTICE, "testmilter_envfrom(ctx, argv):\n");
-	if(argv == NULL)
+	if(argv == NULL) {
+		check_macros(ctx);
 		return SMFIS_CONTINUE;
+	}
 	int i=0;
 
 	while(argv[i]) {
 		syslog(LOG_NOTICE, "testmilter_envfrom(ctx, argv): from: \"%s\"\n", argv[i]);
 		i++;
 	}
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_envrcpt(SMFICTX *ctx, char **argv) {
 	syslog(LOG_NOTICE, "testmilter_envrcpt(ctx, argv):\n");
-	if(argv == NULL)
+	if(argv == NULL) {
+		check_macros(ctx);
 		return SMFIS_CONTINUE;
+	}
+
 	int i=0;
 
 	while(argv[i]) {
 		syslog(LOG_NOTICE, "testmilter_envrcpt(ctx, argv): rcpt: \"%s\"\n", argv[i]);
 		i++;
 	}
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	syslog(LOG_NOTICE, "testmilter_header(ctx, \"%s\", \"%s\")\n", headerf, headerv);
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_eoh(SMFICTX *ctx) {
 	syslog(LOG_NOTICE, "testmilter_eoh(ctx)\n");
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_body(SMFICTX *ctx, unsigned char *bodyp, size_t bodylen) {
 	syslog(LOG_NOTICE, "testmilter_body(ctx, bodyp, %lu)\n", bodylen);
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_eom(SMFICTX *ctx) {
 	syslog(LOG_NOTICE, "testmilter_eom(ctx)\n");
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_abort(SMFICTX *ctx) {
 	syslog(LOG_NOTICE, "testmilter_abort(ctx)\n");
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_close(SMFICTX *ctx) {
 	syslog(LOG_NOTICE, "testmilter_close(ctx)\n");
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_unknown(SMFICTX *ctx, const char *cmd) {
 	syslog(LOG_NOTICE, "testmilter_unknown(ctx, \"%s\")\n", cmd);
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_data(SMFICTX *ctx) {
 	syslog(LOG_NOTICE, "testmilter_data(ctx)\n");
+	check_macros(ctx);
 	return SMFIS_CONTINUE;
 }
 
@@ -104,10 +164,32 @@ sfsistat testmilter_negotiate(ctx, f0, f1, f2, f3, pf0, pf1, pf2, pf3)
 	unsigned long *pf2;
 	unsigned long *pf3;
 {
+#if 0
+	*pf0 |=  SMFIF_ADDHDRS | SMFIF_CHGHDRS | SMFIF_CHGBODY | SMFIF_ADDRCPT |
+		SMFIF_ADDRCPT_PAR | SMFIF_DELRCPT | SMFIF_QUARANTINE | 
+		SMFIF_CHGFROM | SMFIF_SETSYMLIST;
+
+	*pf1 |= 	SMFIP_RCPT_REJ | SMFIP_SKIP | SMFIP_NR_CONN | SMFIP_NR_HELO | 
+		SMFIP_NR_MAIL | SMFIP_NR_RCPT | SMFIP_NR_DATA | SMFIP_NR_UNKN | 
+		SMFIP_NR_EOH | SMFIP_NR_BODY | SMFIP_NR_HDR;
+
+//	*pf0 = f0;
+//	*pf1 = f1;
+
+	*pf2 = 0;
+	*pf3 = 0;
+
+	check_macros(ctx);
+	return SMFIS_CONTINUE;
+#else
+	*pf0 = f0;
+	*pf1 = SMFIP_RCPT_REJ;
 	syslog(LOG_NOTICE, "testmilter_negotiate(ctx, %lu, %lu, %lu, %lu,"
-		" pf0, pf1, pf2, pf3)\n",
-		f0, f1, f2, f3);
-	return SMFIS_ALL_OPTS;
+		" %lu, %lu, %lu, %lu)\n",
+		f0, f1, f2, f3, *pf0, *pf1, *pf2, *pf3);
+	return SMFIS_CONTINUE;
+	//return SMFIS_ALL_OPTS;
+#endif
 }
 
 static void usage(const char *path) {
