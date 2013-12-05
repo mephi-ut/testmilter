@@ -29,20 +29,26 @@ sfsistat testmilter_helo(SMFICTX *ctx, char *helohost) {
 
 sfsistat testmilter_envfrom(SMFICTX *ctx, char **argv) {
 	syslog(LOG_NOTICE, "testmilter_envfrom(ctx, argv):\n");
-	char *arg = *argv;
-	while(arg) {
-		syslog(LOG_NOTICE, "\t\"%s\"\n", arg);
-		arg++;
+	if(argv == NULL)
+		return SMFIS_CONTINUE;
+	int i=0;
+
+	while(argv[i]) {
+		syslog(LOG_NOTICE, "testmilter_envfrom(ctx, argv): from: \"%s\"\n", argv[i]);
+		i++;
 	}
 	return SMFIS_CONTINUE;
 }
 
 sfsistat testmilter_envrcpt(SMFICTX *ctx, char **argv) {
 	syslog(LOG_NOTICE, "testmilter_envrcpt(ctx, argv):\n");
-	char *arg = *argv;
-	while(arg) {
-		syslog(LOG_NOTICE, "\t\"%s\"\n", arg);
-		arg++;
+	if(argv == NULL)
+		return SMFIS_CONTINUE;
+	int i=0;
+
+	while(argv[i]) {
+		syslog(LOG_NOTICE, "testmilter_envrcpt(ctx, argv): rcpt: \"%s\"\n", argv[i]);
+		i++;
 	}
 	return SMFIS_CONTINUE;
 }
